@@ -15,7 +15,6 @@ int main() {
     texture_tiles.loadFromFile("GameResources/tiles.png");
     texture_background.loadFromFile("GameResources/background.png");
     texture_frame.loadFromFile("GameResources/frame.png");
-    texture_gameover.loadFromFile("GameResources/gameover.png");
     texture_shadow.loadFromFile("GameResources/shadow.png");
     texture_bomb.loadFromFile("GameResources/bomb.png");
 
@@ -23,7 +22,6 @@ int main() {
     gameData.tile.setTexture(texture_tiles);
     gameData.background.setTexture(texture_background);
     gameData.frame.setTexture(texture_frame);
-    gameData.gameover.setTexture(texture_gameover);
     gameData.shadow.setTexture(texture_shadow);
     gameData.bomb.setTexture(texture_bomb);
     //---End of Loading Textures and Font---//

@@ -51,6 +51,22 @@ int min_drop_value() {
 }
 
 void drawing_blocks(RenderWindow &window, Sprite &tile, Sprite &shadow, Sprite &bomb, int &colorNum, int &bomb_color, bool &bomb_fall) {
+    // Draw the shadow piece
+    int minDrop = min_drop_value();
+    // Draw the shadow piece at the calculated drop distance
+    for (int i = 0; i < 4; i++) {
+        int x = point_1[i][0];
+        int y = point_1[i][1];
+
+        // Calculate the shadow position for the entire piece
+        int shadowY = y + minDrop;
+
+        shadow.setTextureRect(IntRect(colorNum * 18, 0, 18, 18));
+        shadow.setPosition(x * 18, shadowY * 18);
+        shadow.move(28, 31);
+        window.draw(shadow);
+    }
+
     // Draw the pieces on the grid
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
@@ -67,22 +83,6 @@ void drawing_blocks(RenderWindow &window, Sprite &tile, Sprite &shadow, Sprite &
         tile.setPosition(point_1[i][0] * 18, point_1[i][1] * 18);
         tile.move(28, 31);
         window.draw(tile);
-    }
-
-    // Draw the shadow piece
-    int minDrop = min_drop_value();
-    // Draw the shadow piece at the calculated drop distance
-    for (int i = 0; i < 4; i++) {
-        int x = point_1[i][0];
-        int y = point_1[i][1];
-
-        // Calculate the shadow position for the entire piece
-        int shadowY = y + minDrop;
-
-        shadow.setTextureRect(IntRect(colorNum * 18, 0, 18, 18));
-        shadow.setPosition(x * 18, shadowY * 18);
-        shadow.move(28, 31);
-        window.draw(shadow);
     }
 
     // Draw the bomb piece
@@ -112,9 +112,9 @@ void start_new_game(RenderWindow &window, GameData &gameData) {
     bomb_point[0] = 0;
     bomb_point[1] = 0;
     // Resetting all variables
-    gameData.delta_x = 0, gameData.color_num = rand() % 7 + 1, gameData.score = 0, gameData.lines_cleared = 0, gameData.bomb_color = rand() % 7;
+    gameData.color_num = rand() % 7 + 1, gameData.score = 0, gameData.lines_cleared = 0, gameData.bomb_color = rand() % 7;
     gameData.timer = 0, gameData.prime_delay = 0.3, gameData.current_delay = 0.3, gameData.time = 0, gameData.bomb_timer = 10, gameData.bomb_countdown = 10;
-    gameData.rotate = 0, gameData.fall = true, gameData.is_paused = true, gameData.line_cleared = false, gameData.bomb_fall = false;
+    gameData.rotate = 0, gameData.fall = true, gameData.line_cleared = false, gameData.bomb_fall = false;
 }
 
 bool display_high_scores(RenderWindow &window, Sprite &background, Font &font) {
@@ -210,6 +210,7 @@ bool display_high_scores(RenderWindow &window, Sprite &background, Font &font) {
         window.draw(exit);
         window.display();
     }
+    return false;
 }
 
 bool display_help(RenderWindow &window, Sprite &background, Font &font) {
@@ -269,6 +270,7 @@ bool display_help(RenderWindow &window, Sprite &background, Font &font) {
         window.draw(exit);
         window.display();
     }
+    return false;
 }
 
 void display_main_menu(RenderWindow &window, GameData &gameData) {
@@ -490,6 +492,7 @@ char display_pause_menu(RenderWindow &window, GameData &gameData) {
         window.draw(mainMenu);
         window.display();
     }
+    return 'E';
 }
 
 string display_gameover(RenderWindow &window, GameData &gameData) {
@@ -779,11 +782,9 @@ void event_handling(RenderWindow &window, GameData &gameData) {
             if (e.key.code == Keyboard::Up) {                   //Check if the other key pressed is UP key
                 gameData.rotate = true;                                      //Rotation gets on
             } else if (e.key.code == Keyboard::Left) {          //Check if the other key pressed is LEFT key
-                gameData.delta_x = -1;                                       //Change in X-Axis - Negative
-                moving_left();
+                moving_left();                                              //Move the piece to the left
             } else if (e.key.code == Keyboard::Right) {         //Check if the other key pressed is RIGHT key
-                gameData.delta_x = 1;                                        //Change in X-Axis - Positive
-                moving_right();
+                moving_right();                                             //Move the piece to the right
             } else if (e.key.code == Keyboard::Space) {         //Check if the other key pressed is RIGHT key
                 spacebar(gameData.color_num);
             } else if (e.key.code == Keyboard::Down) {          //Check if the other key pressed is DOWN key
@@ -792,9 +793,7 @@ void event_handling(RenderWindow &window, GameData &gameData) {
                 window.close();                                     //Opened window disposes
             } else if (e.key.code == Keyboard::P) {             //Check if the other key pressed is P key
                 char result = display_pause_menu(window, gameData);
-                if (result == 'P') {
-                    gameData.is_paused = false;
-                } else if (result == 'M') {
+                if (result == 'M') {
                     display_main_menu(window, gameData);
                 }
             }

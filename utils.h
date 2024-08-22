@@ -41,9 +41,9 @@ bool anomaly() {
 
 //---Struct to Hold the Game Data---//
 struct GameData {
-    int delta_x, color_num, score, lines_cleared, bomb_color, n;
+    int color_num, score, lines_cleared, bomb_color, n;
     float timer, prime_delay, current_delay, time, bomb_timer, bomb_countdown;
-    bool rotate, fall, is_paused, line_cleared, bomb_fall;
+    bool rotate, fall, line_cleared, bomb_fall;
     Font font;
-    Sprite tile, background, frame, gameover, shadow, bomb;
+    Sprite tile, background, frame, shadow, bomb;
 };
