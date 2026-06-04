@@ -1,4 +1,10 @@
 
+// On Windows, <windows.h> defines a global `byte` that clashes with std::byte
+// once utils.h does `using namespace std;`. Disable std::byte to avoid C2872.
+#if defined(_WIN32)
+#  define _HAS_STD_BYTE 0
+#endif
+
 #include "functionality.h"
 #include <filesystem>
 #include <system_error>
