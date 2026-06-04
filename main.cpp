@@ -1,8 +1,46 @@
 
 #include "functionality.h"
+#include <filesystem>
+#include <system_error>
+#if defined(_WIN32)
+  #include <windows.h>
+#elif defined(__APPLE__)
+  #include <mach-o/dyld.h>
+  #include <cstdint>
+#endif
+
+// Directory of the running executable, so GameResources/ and scores.txt resolve
+// no matter where the game is launched from (Terminal or double-click).
+static std::filesystem::path executableDir() {
+#if defined(_WIN32)
+    wchar_t buf[MAX_PATH];
+    DWORD len = GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    if (len > 0 && len < MAX_PATH)
+        return std::filesystem::path(std::wstring(buf, len)).parent_path();
+#elif defined(__APPLE__)
+    std::uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    std::string buf(size, '\0');
+    if (size > 0 && _NSGetExecutablePath(buf.data(), &size) == 0) {
+        std::error_code ec;
+        auto p = std::filesystem::canonical(buf.c_str(), ec);
+        if (!ec) return p.parent_path();
+    }
+#elif defined(__linux__)
+    std::error_code ec;
+    auto p = std::filesystem::canonical("/proc/self/exe", ec);
+    if (!ec) return p.parent_path();
+#endif
+    return std::filesystem::current_path();
+}
 
 
 int main() {
+    // Work from the executable's directory so GameResources/ and scores.txt
+    // resolve no matter where the game is launched from.
+    std::error_code chdirEc;
+    std::filesystem::current_path(executableDir(), chdirEc);
+
     //---Game Data Initialization---//
     srand(time(nullptr));
     GameData gameData;
@@ -18,7 +56,7 @@ int main() {
     texture_shadow.loadFromFile("GameResources/shadow.png");
     texture_bomb.loadFromFile("GameResources/bomb.png");
 
-    gameData.font.loadFromFile("GameResources/skia.otf");
+    gameData.font.loadFromFile("GameResources/Skia.otf");
     gameData.tile.setTexture(texture_tiles);
     gameData.background.setTexture(texture_background);
     gameData.frame.setTexture(texture_frame);
