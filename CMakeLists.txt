@@ -8,13 +8,14 @@ file(COPY GameResources DESTINATION ${CMAKE_BINARY_DIR})
 
 add_executable(PF_Tetris main.cpp)
 
-if (WIN32)
-    include_directories(C:/SFML-2.5.1/include)
-else ()
-    include_directories(/usr/local/include)
-endif ()
+# Fetch and statically link SFML 2.6 (no system install needed)
+include(FetchContent)
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_Declare(SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 2.6.2
+    GIT_SHALLOW ON)
+FetchContent_MakeAvailable(SFML)
 
-find_package(SFML 2.5 COMPONENTS system window graphics network audio REQUIRED)
-include_directories(${SFML_INCLUDE_DIRS})
-
-target_link_libraries(PF_Tetris sfml-system sfml-window sfml-graphics sfml-audio sfml-network)
+target_compile_definitions(PF_Tetris PRIVATE SFML_STATIC)
+target_link_libraries(PF_Tetris PRIVATE sfml-system sfml-window sfml-graphics sfml-audio)

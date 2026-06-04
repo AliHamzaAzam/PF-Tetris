@@ -1,0 +1,85 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  name: linux }
+          - { os: windows-latest, name: windows }
+          - { os: macos-latest,   name: macos }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
+            libgl1-mesa-dev libfreetype-dev \
+            libopenal-dev libflac-dev libvorbis-dev libogg-dev xvfb
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release -j
+
+      - name: Smoke test
+        if: matrix.name == 'linux'
+        run: timeout 8 xvfb-run -a ./build/PF_Tetris || true
+
+      - name: Package (Unix)
+        if: matrix.name != 'windows'
+        shell: bash
+        run: |
+          name=PF_Tetris
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then tag="$GITHUB_REF_NAME"; else tag="dev"; fi
+          bin=$(find build -name "$name" -type f | head -1)
+          pkg="$name-$tag-${{ matrix.name }}"
+          mkdir -p "staging/$pkg"
+          cp "$bin" "staging/$pkg/"
+          cp -R GameResources "staging/$pkg/"
+          ( cd staging && zip -r "../$pkg.zip" "$pkg" >/dev/null )
+          echo "ASSET=$pkg.zip" >> "$GITHUB_ENV"
+
+      - name: Package (Windows)
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          $name = "PF_Tetris"
+          $tag = if ($env:GITHUB_REF -like "refs/tags/*") { $env:GITHUB_REF_NAME } else { "dev" }
+          $bin = Get-ChildItem build -Recurse -Filter "$name.exe" | Select-Object -First 1
+          $pkg = "$name-$tag-windows"
+          New-Item -ItemType Directory -Force -Path "staging/$pkg" | Out-Null
+          Copy-Item $bin.FullName -Destination "staging/$pkg/"
+          Copy-Item GameResources -Destination "staging/$pkg/" -Recurse
+          Compress-Archive -Path "staging/$pkg" -DestinationPath "$pkg.zip" -Force
+          "ASSET=$pkg.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload build artifact
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ env.ASSET }}
+
+      - name: Publish to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
