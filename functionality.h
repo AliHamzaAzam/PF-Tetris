@@ -742,8 +742,8 @@ void file_handling(string name, int &score) {
     }
     infile1.close();
 
-    int score1[size];
-    string name1[size];
+    vector<int> score1(size);
+    vector<string> name1(size);
 
     ifstream infile("scores.txt");
     int index = 0;
