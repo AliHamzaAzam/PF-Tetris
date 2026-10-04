@@ -53,3 +53,9 @@ The game starts with blocks falling from the top. The player can move these bloc
     ./PF_Tetris
     ```
     
+
+## Browser port
+
+The experimental browser source and rebuild instructions are in [web/README.md](web/README.md).
+The WASM binaries have not been generated yet, so this branch is a partial browser port.
+See [validation and remaining work](web/VALIDATION.md) before building or hosting it.

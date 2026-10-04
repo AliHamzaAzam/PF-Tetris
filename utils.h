@@ -34,7 +34,7 @@ int bomb_point[2] = {0, 0};
 //---Check Uncertain Conditions---//
 bool anomaly() {
     for (auto & i : point_1)
-        if (i[0] < 0 || i[0] >= N || i[1] >= M || (gameGrid[i[1]][i[0]]) != 0)
+        if (i[0] < 0 || i[0] >= N || i[1] < 0 || i[1] >= M || (gameGrid[i[1]][i[0]]) != 0)
             return false;
     return true;
 }
