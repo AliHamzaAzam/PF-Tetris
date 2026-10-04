@@ -40,6 +40,7 @@ public:
         data.timer=data.current_delay+1;
         falling_piece(data.timer,data.current_delay,data.color_num,rand()%7);
         clear_line(data.score,data.lines_cleared);
+        for(int cell:gameGrid[0])if(cell){screen=Screen::GameOver;return;}
         if(!anomaly()){screen=Screen::GameOver;return;}
         data.prime_delay=std::max(0.05f,0.3f-(data.lines_cleared/5)*0.05f);
         data.current_delay=data.prime_delay;

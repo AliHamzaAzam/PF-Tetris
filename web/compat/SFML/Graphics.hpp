@@ -31,6 +31,9 @@ public:
     Time restart(){auto elapsed=getElapsedTime();last=std::chrono::steady_clock::now();return elapsed;}
 };
 struct Keyboard { enum Key {Unknown,Left,Right,Up,Down,Space,Escape,P,Enter}; };
+inline bool dispatchKey(Keyboard::Key key, bool repeat){
+    return !repeat || key==Keyboard::Left || key==Keyboard::Right || key==Keyboard::Down;
+}
 struct Event {
     enum EventType {Closed,KeyPressed,TextEntered,LostFocus,GainedFocus};
     EventType type{};
@@ -158,6 +161,7 @@ public:
                 case SDLK_RETURN:out.key.code=Keyboard::Enter;break;
                 default:continue;
             }
+            if(!dispatchKey(out.key.code,event.key.repeat!=0))continue;
             return true;
         }
 #else

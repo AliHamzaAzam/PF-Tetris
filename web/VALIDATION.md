@@ -45,3 +45,29 @@ The repository has no separate configured type checker or existing automated tes
 ## Needs the founder
 
 Authorize or provide Emscripten 3.1.64 outside the repository, its SDL2/SDL_image/SDL_ttf ports, and CMake 3.28 or newer plus native SFML build dependencies in this cloud environment. Then rebuild, test real WASM rendering and gameplay, run native builds, and commit the generated artifacts before considering this playable or deployable. No SDK, credentials, deployment, package publication, production API writes, or real notifications were used.
+
+## Expanded SDK discovery and gameplay review
+
+A second path/name-only search covered the readable filesystem from `/`, pruning `/proc`, `/sys` and `/dev`, for files and symlinks named `emcc`, `em++`, `emsdk`, `emsdk_env.sh`, `.emscripten`, `cmake`, and `AGENTS.md`. Targeted directory discovery additionally covered `/workspace`, `/tmp`, `/root`, `/home`, `/opt`, `/usr/local`, `/usr/lib`, and `/usr/share` for SDK/toolchain names. No executable, SDK directory, configuration file, or saved AGENTS setup instruction was found. Permission-denied directories were not inspected. `/workspace/.agents` and `/workspace/.codex` are empty. `EMSDK`, `EM_CONFIG`, `EM_CACHE`, and `CMAKE_PREFIX_PATH` are unset. No credential variables or secret contents were read. `pkg-config --exists sfml-graphics` and `pkg-config --exists sdl2` both returned 1.
+
+Further parity review added failing tests for native top-out across any top-row column and repeated discrete key actions, then fixed both. Left/right/down may repeat; pause, rotate, hard drop, Enter and Escape fire once per press. Expanded ASan/UBSan tests exercise all seven original shapes, lock/spawn behavior, scoring 10/30/60/100, level crossings 4 to 6 and 9 to 11, minimum delay, matching and mismatched bomb effects, floor impacts including color zero, frozen pause timers and 100 randomized games. These C++ tests validate gameplay logic, not browser rendering or the compiled SDL event path.
+
+### Minimal browser toolchain approval bundle
+
+The following official SDK commands have **not** been executed. They install outside the repository and do not require global credentials or system packages:
+
+```sh
+mkdir -p /workspace/c08-tools
+git clone --depth 1 --branch 3.1.64 https://github.com/emscripten-core/emsdk.git /workspace/c08-tools/emsdk
+/workspace/c08-tools/emsdk/emsdk install 3.1.64
+/workspace/c08-tools/emsdk/emsdk activate 3.1.64
+source /workspace/c08-tools/emsdk/emsdk_env.sh
+cd /workspace/PF-Tetris
+./web/build-wasm.sh
+```
+
+Verified official emsdk tag `3.1.64` resolves to `0b3bcbc3b005cbb811d48e497eabcc6846d43001`; its SDK release is `fd61bacaf40131f74987e649a135f1dd559aff60`. Installation downloads the Emscripten/LLVM/Binaryen toolchain and bundled Node. The first build downloads the SDK-pinned ports: SDL 2.28.4, SDL_image 2.6.0, SDL_ttf 2.20.2, FreeType `version_1`, HarfBuzz 3.2.0, libpng 1.6.39 and zlib 1.2.13. Required network origins are GitHub and its archive/release redirect hosts, plus `storage.googleapis.com` for SDK/Node/libpng archives. Port recipes include SHA-512 checks. No separate native SDL installation is needed for this browser build.
+
+Official references: [SDK installation](https://emscripten.org/docs/getting_started/downloads.html), [pinned SDK manifest](https://github.com/emscripten-core/emsdk/blob/3.1.64/emsdk_manifest.json), and [pinned port recipes](https://github.com/emscripten-core/emscripten/tree/3.1.64/tools/ports).
+
+Native validation separately needs CMake 3.28 or newer and the existing workflow's Linux packages: `libxrandr-dev libxcursor-dev libxi-dev libudev-dev libgl1-mesa-dev libfreetype-dev xvfb`. CMake then fetches SFML 2.6.2 from its official GitHub repository. None were installed.
