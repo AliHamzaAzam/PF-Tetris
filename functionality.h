@@ -26,28 +26,17 @@ int* shadow_block() {
 }
 
 int min_drop_value() {
-    int *max_y = shadow_block();
-    int minDrop = 20; // Start with a value higher than the possible grid height
-
-    // Find the maximum drop distance for the entire piece
-    for (int i = 0; i < 4; i++) {
-        int x = point_1[i][0];
-        int y = point_1[i][1];
-
-        // Calculate the potential drop distance for the current block
-        int drop = max_y[x] - y;
-
-        // Ensure drop distance does not cause the piece to go below the grid
-        if (drop < minDrop) {
-            minDrop = drop;
+    // Probe every cell below the complete piece. Never index outside the board,
+    // and stop at the first obstruction rather than the lowest occupied cell.
+    int distance = 0;
+    for (;;) {
+        for (const auto &cell : point_1) {
+            int x = cell[0], y = cell[1] + distance + 1;
+            if (x < 0 || x >= N || y < 0 || y >= M || gameGrid[y][x])
+                return distance;
         }
-
-        // Check how far the piece can drop
-        while (gameGrid[y + minDrop][x] != 0 || gameGrid[y + minDrop - 1][x] != 0) {
-            minDrop--;
-        }
+        ++distance;
     }
-    return minDrop;
 }
 
 void drawing_blocks(RenderWindow &window, Sprite &tile, Sprite &shadow, Sprite &bomb, int &colorNum, int &bomb_color, bool &bomb_fall) {
@@ -94,7 +83,7 @@ void drawing_blocks(RenderWindow &window, Sprite &tile, Sprite &shadow, Sprite &
     }
 }
 
-void start_new_game(RenderWindow &window, GameData &gameData) {
+void start_new_game(RenderWindow &, GameData &gameData) {
     // Resetting game grid
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
@@ -607,13 +596,16 @@ void falling_bomb(float &timer, float &delay, int &bomb_color, bool &bomb_fall, 
     if (timer > delay) {
         bomb_point[0] += 1;
         if (bomb_point[0] >= M || gameGrid[bomb_point[0]][bomb_point[1]]) {
-            if(gameGrid[bomb_point[0]][bomb_point[1]] == bomb_color){
+            if(bomb_point[0] < M && bomb_color != 0 && gameGrid[bomb_point[0]][bomb_point[1]] == bomb_color){
                 for(int i = 0; i < M; i++){
                     for(int j = 0; j < N; j++) {
                         gameGrid[i][j] = 0;
                     }
                 }
             } else{
+                // Clamp the impact row before touching the board when the bomb
+                // reaches the floor (the falling position is then M).
+                if (bomb_point[0] >= M) bomb_point[0] = M - 1;
                 gameGrid[bomb_point[0]][bomb_point[1]] = 0;
                 gameGrid[(bomb_point[0] + 1 < M) ? bomb_point[0] + 1 : bomb_point[0] - 1][bomb_point[1]] = 0;
                 gameGrid[(bomb_point[0] + 1 < M) ? bomb_point[0] + 1 : bomb_point[0] - 1][(bomb_point[1] + 1 < N) ? bomb_point[1] + 1 : bomb_point[1] - 1] = 0;
@@ -666,65 +658,36 @@ void moving_left() {
 }
 
 void rotating() {
-    int centerX = point_1[1][0];
-    int centerY = point_1[1][1];
-    bool check = true;
-    //CHECKS IF SHAPE GOES OUTSIDE GRID
-    for (auto &i: point_1) {
-        if ((i[1] - centerY + centerX < 0) || (i[1] - centerY + centerX > 9)) {
-            check = false;
-        }
-        if ((centerX - point_1[0][0] + centerY < 0) || (centerX - point_1[3][0] + centerY > 19)) {
-            check = false;
-        }
+    int rotated[4][2];
+    const int centerX = point_1[1][0], centerY = point_1[1][1];
+    for (int i = 0; i < 4; ++i) {
+        rotated[i][0] = point_1[i][1] - centerY + centerX;
+        rotated[i][1] = centerX - point_1[i][0] + centerY;
+        const int x = rotated[i][0], y = rotated[i][1];
+        if (x < 0 || x >= N || y < 0 || y >= M || gameGrid[y][x]) return;
     }
-    //ROTATION
-    if (check) {
-        for (auto &i: point_1) {
-            int tempx = i[0];
-            int tempy = i[1];
-            i[0] = tempy - centerY + centerX;
-            i[1] = centerX - tempx + centerY;
-        }
+    for (int i = 0; i < 4; ++i) {
+        point_1[i][0] = rotated[i][0];
+        point_1[i][1] = rotated[i][1];
     }
 }
 
 bool clear_line(int &score, int &tLines) {
-    int a = 19, line = 0;
-    for (int i = a; i > 0; i--) {
-        int count = 0;
-        for (int j = 0; j < 10; j++) {
-            if (gameGrid[i][j]) {
-                count++;
-            }
-            gameGrid[a][j] = gameGrid[i][j]; //Clearing the line
-        }
-        if (count == 10) {//ALL X-COORDINATES != 0
-            line++;
-        }
-        if (count < 10) {
-            a--;
-        }
+    int target = M - 1, lines = 0;
+    for (int row = M - 1; row >= 0; --row) {
+        bool full = true;
+        for (int x = 0; x < N; ++x) if (!gameGrid[row][x]) full = false;
+        if (full) { ++lines; continue; }
+        for (int x = 0; x < N; ++x) gameGrid[target][x] = gameGrid[row][x];
+        --target;
     }
-    // Score calculation
-    if (line == 1) {
-        score += 10;
-        tLines += 1;
-        return true;
-    } else if (line == 2) {
-        score += 30;
-        tLines += 2;
-        return true;
-    } else if (line == 3) {
-        score += 60;
-        tLines += 3;
-        return true;
-    } else if (line == 4) {
-        score += 100;
-        tLines += 4;
-        return true;
+    while (target >= 0) {
+        for (int x = 0; x < N; ++x) gameGrid[target][x] = 0;
+        --target;
     }
-    return false;
+    score += 5 * lines * (lines + 1);
+    tLines += lines;
+    return lines != 0;
 }
 
 void file_handling(string name, int &score) {
@@ -824,5 +787,4 @@ void drawing_score(RenderWindow &window, int &score, Font &font) {
     text2.move(230.f, 180.f);
     window.draw(text2);
 }
-
 
